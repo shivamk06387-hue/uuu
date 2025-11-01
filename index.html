@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Music Player</title>
+<style>
+  body {
+    margin: 0;
+    overflow: hidden;
+    background: radial-gradient(circle at bottom, #020111 0%, #000000 100%);
+    height: 100vh;
+    font-family: 'Poppins', sans-serif;
+    background-size: cover;
+    background-position: center;
+    color: white;
+    position: relative;
+  }
+
+  .title {
+    position: absolute;
+    top: 20px;
+    width: 100%;
+    text-align: center;
+    font-size: 32px;
+    color: #ffffffcc;
+    font-weight: 600;
+    text-shadow: 0 0 15px #00ffff, 0 0 30px #00ffff66;
+    animation: glow 2s infinite alternate;
+    z-index: 10;
+  }
+
+  @keyframes glow {
+    from { text-shadow: 0 0 10px #00ffff; }
+    to { text-shadow: 0 0 25px #00ffff, 0 0 50px #00ffff88; }
+  }
+
+  .star {
+    position: absolute;
+    background: white;
+    border-radius: 50%;
+    opacity: 0.8;
+    animation: twinkle 2s infinite ease-in-out alternate;
+  }
+
+  @keyframes twinkle {
+    from { opacity: 0.3; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1.2); }
+  }
+
+  .shooting-star {
+    position: absolute;
+    width: 150px;
+    height: 2px;
+    background: linear-gradient(90deg, white, rgba(255,255,255,0));
+    border-radius: 50%;
+    opacity: 0.8;
+    transform: rotate(-45deg);
+    animation: shoot 1.5s linear forwards;
+    z-index: 5;
+  }
+
+  @keyframes shoot {
+    0% { transform: translate(0,0) rotate(-45deg); opacity:1; }
+    100% { transform: translate(-400px,400px) rotate(-45deg); opacity:0; }
+  }
+
+  .music-btn {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 14px 32px;
+    background: #00ffff33;
+    border: 2px solid #00ffff;
+    border-radius: 30px;
+    color: white;
+    font-size: 20px;
+    font-weight: 600;
+    cursor: pointer;
+    text-shadow: 0 0 10px #00ffff;
+    transition: 0.4s;
+    z-index: 20;
+  }
+
+  .music-btn:hover {
+    background: #00ffff66;
+    box-shadow: 0 0 15px #00ffff;
+  }
+
+  .hide { opacity:0; pointer-events:none; transition:opacity 1s; }
+
+  .bg-video {
+    position: fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    object-fit: cover;
+    z-index: 1;
+    display: none;
+  }
+
+  .next-btn {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 10px 25px;
+    background: #00ffff33;
+    border: 2px solid #00ffff;
+    border-radius: 25px;
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+    transition: 0.3s;
+    display: none;
+    z-index: 20;
+  }
+
+  .next-btn:hover {
+    background: #00ffff66;
+    box-shadow: 0 0 10px #00ffff;
+  }
+</style>
+</head>
+<body>
+
+<div class="title"></div>
+<button class="music-btn" id="playBtn">Wanna See</button>
+<button class="next-btn" id="nextBtn">CLICK</button>
+
+<video id="bg-music" class="bg-video" controls></video>
+
+<script>
+  // 💫 Stars setup
+  const numStars = 200;
+  for(let i=0;i<numStars;i++){
+    const star=document.createElement('div');
+    star.classList.add('star');
+    star.style.width=star.style.height=Math.random()*2+'px';
+    star.style.top=Math.random()*100+'%';
+    star.style.left=Math.random()*100+'%';
+    star.style.animationDuration=(1+Math.random()*2)+'s';
+    document.body.appendChild(star);
+  }
+
+  // 🌠 Shooting stars
+  function createShootingStar(){
+    const star=document.createElement('div');
+    star.classList.add('shooting-star');
+    star.style.top=Math.random()*window.innerHeight/2+'px';
+    star.style.left=Math.random()*window.innerWidth+'px';
+    document.body.appendChild(star);
+    setTimeout(()=>star.remove(),2000);
+  }
+  setInterval(()=>{
+    for(let i=0;i<5;i++)
+      setTimeout(createShootingStar,i*100);
+  },1000);
+
+  // 🎵 Music Controls
+  const music=document.getElementById('bg-music');
+  const playBtn=document.getElementById('playBtn');
+  const nextBtn=document.getElementById('nextBtn');
+
+  const playlist = [
+    'MUSICS/7.mp4',
+    'MUSICS/8.mp4',
+    'MUSICS/10.mp4',
+    'MUSICS/11.mp4',
+    'MUSICS/12.mp4',
+    'MUSICS/13.mp4',
+  ];
+
+  const bgImages = {
+    1: 'MUSICS/8.jpg',
+    3: 'MUSICS/11.jpg',
+    4: 'MUSICS/12.jpg',
+    5: 'MUSICS/13.jpg',
+  };
+
+  const audioIndices = [1,3,4,5];
+  let currentSong = 0;
+  let currentAudio = null; // 🔥 to store current playing audio (if any)
+
+  function stopAll(){
+    music.pause();
+    music.currentTime = 0;
+    music.style.display = 'none';
+
+    if(currentAudio){
+      currentAudio.pause();
+      currentAudio.currentTime = 0;
+      currentAudio = null;
+    }
+  }
+
+  function playSong(index){
+    stopAll(); // always stop previous media
+
+    if(index >= playlist.length){
+      nextBtn.style.display = 'none';
+      alert("🎵 All songs finished!");
+      return;
+    }
+
+    const src = playlist[index];
+    if(audioIndices.includes(index)){
+      // play as audio with background
+      document.body.style.backgroundImage = `url('${bgImages[index]}')`;
+      document.body.style.backgroundSize = 'cover';
+      document.body.style.backgroundPosition = 'center';
+      currentAudio = new Audio(src);
+      currentAudio.play();
+      music.style.display = 'none';
+    } else {
+      // play as video
+      document.body.style.backgroundImage = 'none';
+      music.src = src;
+      music.style.display = 'block';
+      music.currentTime = 0;
+      music.play();
+    }
+
+    nextBtn.style.display = 'block';
+  }
+
+  playBtn.addEventListener('click', ()=>{
+    playSong(currentSong);
+    playBtn.classList.add('hide');
+  });
+
+  nextBtn.addEventListener('click', ()=>{
+    currentSong++;
+    playSong(currentSong);
+  });
+</script>
+
+</body>
+</html>
